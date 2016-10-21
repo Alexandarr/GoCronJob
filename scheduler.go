@@ -2,47 +2,70 @@ package job
 
 import (
 	"errors"
-	"time"
-
-	"github.com/robfig/revel/cache"
+	"log"
 )
 
 var (
-	errJobAlreadyExists = errors.New("Job already exists")
+	errTaskAlreadyExists = errors.New("Task already exists")
+	errTaskNotExists     = errors.New("Task not exists")
 )
 
 // Scheduler interface represent a scheduler
 type Scheduler interface {
-	ScheduleJob(Jober, time.Duration) error
-	Stop()
+	ScheduleTask(Task) error
+	ScheduleJob(name string, job Job, cron ...string) error
+	Stop(string) error
 }
 
 // scheduler is where you schedule all your jobs
 type scheduler struct {
-	store cache.Cache
-	jobs  map[string]Jober
+	tasks map[string]Task
 }
 
-// ScheduleJob register a job
-func (s *scheduler) ScheduleJob(j Jober, d time.Duration) error {
-	if _, ok := s.jobs[j.Name()]; ok {
-		return errJobAlreadyExists
+// ScheduleJob register a task
+func (s *scheduler) ScheduleTask(t Task) error {
+	if _, ok := s.tasks[t.name()]; ok {
+		return errTaskAlreadyExists
 	}
-	s.jobs[j.Name()] = j
+
+	s.tasks[t.name()] = t
+	// t.Start()
+	t.run()
 	return nil
 }
 
-// Stop will stop all registered jobs
-func (s *scheduler) Stop() {
-	for _, job := range s.jobs {
-		job.Stop()
+// StopTask stop a task
+func (s *scheduler) StopTask(t Task) error {
+	if _, ok := s.tasks[t.name()]; !ok {
+		return errTaskNotExists
 	}
+	delete(s.tasks, t.name())
+	err := t.stop()
+	t = nil
+	return err
+}
+
+// ScheduleJob register a job
+func (s *scheduler) ScheduleJob(name string, job Job, cron ...string) error {
+	task, err := NewTask(name, job, cron...)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	return s.ScheduleTask(task)
+}
+
+// Stop will stop all registered jobs
+func (s *scheduler) Stop(name string) error {
+	if t, ok := s.tasks[name]; ok {
+		return s.StopTask(t)
+	}
+	return errTaskNotExists
 }
 
 // NewScheduler create a new scheduler
-func NewScheduler(cache cache.Cache) Scheduler {
+func NewScheduler() Scheduler {
 	s := new(scheduler)
-	s.store = cache
-	s.jobs = make(map[string]Jober)
+	s.tasks = make(map[string]Task)
 	return s
 }
