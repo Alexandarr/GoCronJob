@@ -147,4 +147,5 @@ func (task *task) name() string {
 
 func (task *task) description() string {
 	return fmt.Sprintf(`\n***********************\nTask: %s\nStatus: %s\nProcess: %f\n***********************\n`, task.taskName, task.taskStatus.Description(), task.process)
+
 }
