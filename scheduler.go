@@ -13,8 +13,12 @@ var (
 // Scheduler interface represent a scheduler
 type Scheduler interface {
 	ScheduleJob(name string, job Job, cron ...string) error
-	StopTask(t Task) error
+	StopTask(Task) error
 	Stop(string) error
+	PauseTask(Task) error
+	Pause(string) error
+	ResumeTask(Task) error
+	Resume(string) error
 	All() []Task
 	AllTask() []string
 }
@@ -36,6 +40,16 @@ func (s *scheduler) scheduleTask(t Task) error {
 	return nil
 }
 
+// ScheduleJob register a job
+func (s *scheduler) ScheduleJob(name string, job Job, cron ...string) error {
+	task, err := NewTask(name, job, cron...)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	return s.scheduleTask(task)
+}
+
 // StopTask stop a task
 func (s *scheduler) StopTask(t Task) error {
 	if _, ok := s.tasks[t.name()]; !ok {
@@ -47,20 +61,31 @@ func (s *scheduler) StopTask(t Task) error {
 	return err
 }
 
-// ScheduleJob register a job
-func (s *scheduler) ScheduleJob(name string, job Job, cron ...string) error {
-	task, err := NewTask(name, job, cron...)
-	if err != nil {
-		log.Println(err.Error())
-		return err
-	}
-	return s.scheduleTask(task)
-}
-
 // Stop will stop all registered jobs
 func (s *scheduler) Stop(name string) error {
 	if t, ok := s.tasks[name]; ok {
 		return s.StopTask(t)
+	}
+	return errTaskNotExists
+}
+
+func (s *scheduler) PauseTask(t Task) error {
+	return t.pause()
+}
+
+func (s *scheduler) Pause(name string) error {
+	if t, ok := s.tasks[name]; ok {
+		return s.PauseTask(t)
+	}
+	return errTaskNotExists
+}
+func (s *scheduler) ResumeTask(t Task) error {
+	return t.resume()
+
+}
+func (s *scheduler) Resume(name string) error {
+	if t, ok := s.tasks[name]; ok {
+		return s.ResumeTask(t)
 	}
 	return errTaskNotExists
 }
