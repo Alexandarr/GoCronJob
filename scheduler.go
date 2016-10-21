@@ -15,6 +15,8 @@ type Scheduler interface {
 	ScheduleTask(Task) error
 	ScheduleJob(name string, job Job, cron ...string) error
 	Stop(string) error
+	All() []Task
+	AllTask() []string
 }
 
 // scheduler is where you schedule all your jobs
@@ -61,6 +63,22 @@ func (s *scheduler) Stop(name string) error {
 		return s.StopTask(t)
 	}
 	return errTaskNotExists
+}
+
+func (s *scheduler) All() []Task {
+	var res []Task
+	for _, v := range s.tasks {
+		res = append(res, v)
+	}
+	return res
+}
+
+func (s *scheduler) AllTask() []string {
+	var res []string
+	for k := range s.tasks {
+		res = append(res, k)
+	}
+	return res
 }
 
 // NewScheduler create a new scheduler
