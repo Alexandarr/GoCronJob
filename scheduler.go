@@ -12,8 +12,8 @@ var (
 
 // Scheduler interface represent a scheduler
 type Scheduler interface {
-	ScheduleTask(Task) error
 	ScheduleJob(name string, job Job, cron ...string) error
+	StopTask(t Task) error
 	Stop(string) error
 	All() []Task
 	AllTask() []string
@@ -25,7 +25,7 @@ type scheduler struct {
 }
 
 // ScheduleJob register a task
-func (s *scheduler) ScheduleTask(t Task) error {
+func (s *scheduler) scheduleTask(t Task) error {
 	if _, ok := s.tasks[t.name()]; ok {
 		return errTaskAlreadyExists
 	}
@@ -54,7 +54,7 @@ func (s *scheduler) ScheduleJob(name string, job Job, cron ...string) error {
 		log.Println(err.Error())
 		return err
 	}
-	return s.ScheduleTask(task)
+	return s.scheduleTask(task)
 }
 
 // Stop will stop all registered jobs
