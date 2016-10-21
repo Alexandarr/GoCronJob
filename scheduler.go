@@ -2,7 +2,6 @@ package job
 
 import (
 	"errors"
-
 	"log"
 )
 
